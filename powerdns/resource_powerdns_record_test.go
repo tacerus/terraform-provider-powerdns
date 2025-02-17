@@ -144,6 +144,10 @@ func TestAccPDNSRecord_SOA(t *testing.T) {
 	testPDNSRecordCommonTestCore(t, testPDNSRecordConfigSOA)
 }
 
+func TestAccPDNSRecord_SOA_SOA(t *testing.T) {
+	testPDNSRecordSOATestCore(t, testPDNSRecordConfigSOA_SOA)
+}
+
 //
 // Test Helper Functions
 //
@@ -181,9 +185,40 @@ func testPDNSRecordCommonTestCore(t *testing.T, recordConfigGenerator func() *Po
 	})
 }
 
+// SOA Test Core: This function builds a create / update test specificially for the SOA recource
+func testPDNSRecordSOATestCore(t *testing.T, recordConfigGenerator func() *PowerDNSRecordResource) {
+	// Update test resources.
+	recordConfig := recordConfigGenerator()
+
+	updateRecordConfig := recordConfigGenerator()
+	updateRecordConfig.Arguments.TTL += 100
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPDNSRecordDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: recordConfig.ResourceSOADeclaration(),
+				Check:  recordConfig.ResourceChecks(),
+			},
+			{
+				Config: updateRecordConfig.ResourceSOADeclaration(),
+				Check:  updateRecordConfig.ResourceChecks(),
+			},
+			{
+				ResourceName:      recordConfig.ResourceName(),
+				ImportStateId:     recordConfig.ResourceID(),
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckPDNSRecordDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "powerdns_record" {
+		if rs.Type != "powerdns_record" && rs.Type != "powerdns_record_soa" {
 			continue
 		}
 
@@ -294,16 +329,24 @@ func testAccCheckPDNSRecordContents(recordConfig *PowerDNSRecordResource) resour
 	}
 }
 
-//
 // Resource Declaration types and methods
 // These types & methods define a object layout declare resources during test, to allow for easy update tests and code deduplication
-//
 type PowerDNSRecordResourceArguments struct {
-	Count   int
-	Zone    string
-	Name    string
-	Type    string
-	TTL     int
+	Count int
+	Zone  string
+	Name  string
+	Type  string
+	TTL   int
+
+	// only for SOA
+	Mname   string
+	Rname   string
+	Serial  int
+	Refresh int
+	Retry   int
+	Expire  int
+	Minimum int
+
 	Records []string
 	// UpdateRecords are recordsets used for testing update behavior.
 	UpdateRecords []string
@@ -371,6 +414,30 @@ func (resourceConfig *PowerDNSRecordResource) ResourceDeclaration() string {
 	return resourceDeclaration
 }
 
+func (resourceConfig *PowerDNSRecordResource) ResourceSOADeclaration() string {
+	resourceDeclaration := `resource "powerdns_record_soa" "` + resourceConfig.Name + "\" {\n"
+	if resourceConfig.Arguments.Count > 0 {
+		resourceDeclaration += "  count = " + strconv.Itoa(resourceConfig.Arguments.Count) + "\n"
+	}
+
+	resourceDeclaration += fmt.Sprintf("zone = \"%s\"\n", resourceConfig.Arguments.Zone)
+	resourceDeclaration += fmt.Sprintf("name = \"%s\"\n", resourceConfig.Arguments.Name)
+	resourceDeclaration += fmt.Sprintf("type = \"%s\"\n", resourceConfig.Arguments.Type)
+	resourceDeclaration += fmt.Sprintf("mname = \"%s\"\n", resourceConfig.Arguments.Mname)
+	resourceDeclaration += fmt.Sprintf("rname = \"%s\"\n", resourceConfig.Arguments.Rname)
+	resourceDeclaration += fmt.Sprintf("serial = %d\n", resourceConfig.Arguments.Serial)
+	resourceDeclaration += fmt.Sprintf("refresh = %d\n", resourceConfig.Arguments.Refresh)
+	resourceDeclaration += fmt.Sprintf("retry = %d\n", resourceConfig.Arguments.Retry)
+	resourceDeclaration += fmt.Sprintf("expire = %d\n", resourceConfig.Arguments.Expire)
+	resourceDeclaration += fmt.Sprintf("minimum = %d\n", resourceConfig.Arguments.Minimum)
+	resourceDeclaration += fmt.Sprintf("ttl = %d\n", resourceConfig.Arguments.TTL)
+	resourceDeclaration += "lifecycle {\nignore_changes = [ serial ]\n}\n"
+
+	resourceDeclaration += "}"
+
+	return resourceDeclaration
+}
+
 // This function builds out the Terraform resource ID for the resource
 func (resourceConfig *PowerDNSRecordResource) ResourceID() string {
 	return `{"zone":"` + resourceConfig.Arguments.Zone + `","id":"` + resourceConfig.Arguments.Name + ":::" + resourceConfig.Arguments.Type + `"}`
@@ -378,7 +445,14 @@ func (resourceConfig *PowerDNSRecordResource) ResourceID() string {
 
 // This function is a trivial helper to return the Terraform resource name
 func (resourceConfig *PowerDNSRecordResource) ResourceName() string {
-	return "powerdns_record." + resourceConfig.Name
+	name := resourceConfig.Name
+	var prefix string
+	if strings.Contains(name, "soa2") {
+		prefix = "powerdns_record_soa."
+	} else {
+		prefix = "powerdns_record."
+	}
+	return prefix + resourceConfig.Name
 }
 
 func NewPowerDNSRecordResource() *PowerDNSRecordResource {
@@ -393,13 +467,11 @@ func NewPowerDNSRecordResource() *PowerDNSRecordResource {
 	return record
 }
 
-//
 // Test resource declaration functions
 //
 // Pattern: testPDNSRecordConfigXXX() returns a PowerDNSRecordResource struct
 // The PowerDNSRecordResource struct can be used to query test config, update attributes for update tests,
 // and can have ResourceDeclaration() called against it to generate the Terraform DSL resource block string.
-//
 func testPDNSRecordConfigRecordEmpty() *PowerDNSRecordResource {
 	record := NewPowerDNSRecordResource()
 	record.Name = "test-a"
@@ -594,5 +666,22 @@ func testPDNSRecordConfigSOA() *PowerDNSRecordResource {
 	record.Arguments.TTL = 3600
 	record.Arguments.Records = append(record.Arguments.Records, "something.something. hostmaster.sysa.xyz. 2019090301 10800 3600 604800 3600")
 	record.Arguments.UpdateRecords = append(record.Arguments.UpdateRecords, "something.something. hostmaster.sysa.xyz. 2021021801 10800 3600 604800 3600")
+	return record
+}
+
+func testPDNSRecordConfigSOA_SOA() *PowerDNSRecordResource {
+	record := NewPowerDNSRecordResource()
+	record.Name = "test-soa2"
+	record.Arguments.Zone = "test-soa2-sysa.xyz."
+	record.Arguments.Name = "test-soa2-sysa.xyz."
+	record.Arguments.Type = "SOA"
+	record.Arguments.Mname = "ns1.sysa.xyz."
+	record.Arguments.Rname = "hostmaster.sysa.xyz."
+	record.Arguments.Serial = 0
+	record.Arguments.Refresh = 7200
+	record.Arguments.Retry = 900
+	record.Arguments.Expire = 1209600
+	record.Arguments.Minimum = 6399
+	record.Arguments.TTL = 3600
 	return record
 }
