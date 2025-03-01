@@ -176,6 +176,7 @@ type ZoneInfo struct {
 	URL                string              `json:"url"`
 	Kind               string              `json:"kind"`
 	DNSSec             bool                `json:"dnsssec"`
+	NSEC3Param         string              `json:"nsec3param"`
 	Serial             int64               `json:"serial"`
 	Records            []Record            `json:"records,omitempty"`
 	ResourceRecordSets []ResourceRecordSet `json:"rrsets,omitempty"`
