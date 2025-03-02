@@ -65,6 +65,12 @@ func resourcePDNSZone() *schema.Resource {
 				ForceNew: false,
 			},
 
+			"api_rectify": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: false,
+			},
+
 			"dnssec": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -119,6 +125,7 @@ func resourcePDNSZoneCreate(d *schema.ResourceData, meta interface{}) error {
 		Account:     d.Get("account").(string),
 		Nameservers: nameservers,
 		SoaEditAPI:  d.Get("soa_edit_api").(string),
+		APIRectify:  d.Get("api_rectify").(bool),
 		DNSSec:      d.Get("dnssec").(bool),
 		NSEC3Param:  d.Get("nsec3param").(string),
 	}
@@ -155,6 +162,7 @@ func resourcePDNSZoneRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("kind", zoneInfo.Kind)
 	d.Set("account", zoneInfo.Account)
 	d.Set("soa_edit_api", zoneInfo.SoaEditAPI)
+	d.Set("api_rectify", zoneInfo.APIRectify)
 	d.Set("dnssec", zoneInfo.DNSSec)
 	d.Set("nsec3param", zoneInfo.NSEC3Param)
 
@@ -185,11 +193,12 @@ func resourcePDNSZoneUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	zoneInfo := ZoneInfoUpd{}
-	if d.HasChange("kind") || d.HasChange("account") || d.HasChange("soa_edit_api") || d.HasChange("dnssec") || d.HasChange("nsec3param") {
+	if d.HasChange("kind") || d.HasChange("account") || d.HasChange("soa_edit_api") || d.HasChange("api_rectify") || d.HasChange("dnssec") || d.HasChange("nsec3param") {
 		zoneInfo.Name = d.Get("name").(string)
 		zoneInfo.Kind = d.Get("kind").(string)
 		zoneInfo.Account = d.Get("account").(string)
 		zoneInfo.SoaEditAPI = d.Get("soa_edit_api").(string)
+		zoneInfo.APIRectify = d.Get("api_rectify").(bool)
 		zoneInfo.DNSSec = d.Get("dnssec").(bool)
 		zoneInfo.NSEC3Param = d.Get("nsec3param").(string)
 

@@ -175,6 +175,7 @@ type ZoneInfo struct {
 	Name               string              `json:"name"`
 	URL                string              `json:"url"`
 	Kind               string              `json:"kind"`
+	APIRectify         bool                `json:"api_rectify"`
 	DNSSec             bool                `json:"dnssec"`
 	NSEC3Param         string              `json:"nsec3param"`
 	Serial             int64               `json:"serial"`
@@ -190,6 +191,7 @@ type ZoneInfo struct {
 type ZoneInfoUpd struct {
 	Name       string `json:"name"`
 	Kind       string `json:"kind"`
+	APIRectify bool   `json:"api_rectify"`
 	DNSSec     bool   `json:"dnssec"`
 	NSEC3Param string `json:"nsec3param"`
 	SoaEditAPI string `json:"soa_edit_api,omitempty"`

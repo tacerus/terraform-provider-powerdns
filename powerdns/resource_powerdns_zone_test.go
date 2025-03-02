@@ -398,6 +398,7 @@ func TestAccPDNSZoneDNSSec(t *testing.T) {
 					testAccCheckPDNSZoneExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", "dnssec.sysa.abc."),
 					resource.TestCheckResourceAttr(resourceName, "kind", "Native"),
+					resource.TestCheckResourceAttr(resourceName, "api_rectify", "true"),
 					resource.TestCheckResourceAttr(resourceName, "dnssec", "true"),
 					resource.TestCheckResourceAttr(resourceName, "nsec3param", "1 0 1 -"),
 				),
@@ -570,6 +571,7 @@ const testPDNSZoneConfigDNSSec = `
 resource "powerdns_zone" "test-dnssec" {
 	name = "dnssec.sysa.abc."
 	kind = "Native"
+	api_rectify = true
 	dnssec = true
 	nsec3param = "1 0 1 -"
 }`
