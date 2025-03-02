@@ -21,3 +21,30 @@ variable "soa_edit_api" {
 	type = string
 	default = "INCREMENT"
 }
+
+variable "api_rectify" {
+	description = "Whether to enable API rectification in the given zones."
+	type = bool
+	default = null
+}
+
+variable "dnssec" {
+	description = "Whether to enable DNSSEC in the given zones."
+	type = bool
+	default = null
+}
+
+variable "nsec3params" {
+	description = "NSEC3 parameters to configure in the given zones."
+	type = object(
+		{
+			optout = number
+			additerations = number
+		}
+	)
+	default = null
+	#{
+	#	optout = 0
+	#	additerations = 0
+	#}
+}

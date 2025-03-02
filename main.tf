@@ -12,6 +12,9 @@ resource "powerdns_zone" "zone" {
 	kind = "Native"
 	nameservers = length(var.nameservers) == 0 ? local.nameservers_records_data : var.nameservers
 	soa_edit_api = var.soa_edit_api
+	api_rectify = var.dnssec != null ? true : false
+	dnssec = var.dnssec
+	nsec3param = var.dnssec != null && var.nsec3params != null ? format("%d %d %d %s", 1, var.nsec3params.optout, var.nsec3params.additerations, "-") : null
 
 	lifecycle {
 		ignore_changes = [
