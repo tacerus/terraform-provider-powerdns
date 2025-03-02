@@ -385,6 +385,32 @@ func TestAccPDNSZoneMasterWithMasters(t *testing.T) {
 	})
 }
 
+func TestAccPDNSZoneDNSSec(t *testing.T) {
+	resourceName := "powerdns_zone.test-dnssec"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testPDNSZoneConfigDNSSec,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPDNSZoneExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", "dnssec.sysa.abc."),
+					resource.TestCheckResourceAttr(resourceName, "kind", "Native"),
+					resource.TestCheckResourceAttr(resourceName, "dnssec", "true"),
+					resource.TestCheckResourceAttr(resourceName, "nsec3param", "1 0 1 -"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckPDNSZoneDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "powerdns_zone" {
@@ -538,4 +564,12 @@ resource "powerdns_zone" "test-master-with-masters" {
 	name = "master-with-masters.sysa.abc."
 	kind = "Master"
 	masters = ["1.1.1.1", "2.2.2.2"]
+}`
+
+const testPDNSZoneConfigDNSSec = `
+resource "powerdns_zone" "test-dnssec" {
+	name = "dnssec.sysa.abc."
+	kind = "Native"
+	dnssec = true
+	nsec3param = "1 0 1 -"
 }`
