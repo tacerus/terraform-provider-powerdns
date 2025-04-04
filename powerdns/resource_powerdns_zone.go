@@ -59,6 +59,12 @@ func resourcePDNSZone() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"soa_edit": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: false,
+			},
+
 			"soa_edit_api": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -124,6 +130,7 @@ func resourcePDNSZoneCreate(d *schema.ResourceData, meta interface{}) error {
 		Kind:        d.Get("kind").(string),
 		Account:     d.Get("account").(string),
 		Nameservers: nameservers,
+		SoaEdit:     d.Get("soa_edit").(string),
 		SoaEditAPI:  d.Get("soa_edit_api").(string),
 		APIRectify:  d.Get("api_rectify").(bool),
 		DNSSec:      d.Get("dnssec").(bool),
@@ -161,6 +168,7 @@ func resourcePDNSZoneRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", zoneInfo.Name)
 	d.Set("kind", zoneInfo.Kind)
 	d.Set("account", zoneInfo.Account)
+	d.Set("soa_edit", zoneInfo.SoaEdit)
 	d.Set("soa_edit_api", zoneInfo.SoaEditAPI)
 	d.Set("api_rectify", zoneInfo.APIRectify)
 	d.Set("dnssec", zoneInfo.DNSSec)
@@ -192,11 +200,27 @@ func resourcePDNSZoneUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 
+	if d.HasChange("soa_edit") {
+		var c error
+
+		if d.Get("soa_edit").(string) == "" {
+			c = client.DeleteZoneMeta(d.Id(), "SOA-EDIT")
+		}
+
+		// other kinds can be supported here in the future
+		// at the time of writing, PowerDNS does not support API-RECTIFY, SOA-EDIT-API, NSEC3PARAM to be deleted using /metadata
+
+		if c != nil {
+			return c
+		}
+	}
+
 	zoneInfo := ZoneInfoUpd{}
-	if d.HasChange("kind") || d.HasChange("account") || d.HasChange("soa_edit_api") || d.HasChange("api_rectify") || d.HasChange("dnssec") || d.HasChange("nsec3param") {
+	if d.HasChange("kind") || d.HasChange("account") || (d.HasChange("soa_edit") && d.Get("soa_edit").(string) != "") || d.HasChange("soa_edit_api") || d.HasChange("api_rectify") || d.HasChange("dnssec") || d.HasChange("nsec3param") {
 		zoneInfo.Name = d.Get("name").(string)
 		zoneInfo.Kind = d.Get("kind").(string)
 		zoneInfo.Account = d.Get("account").(string)
+		zoneInfo.SoaEdit = d.Get("soa_edit").(string)
 		zoneInfo.SoaEditAPI = d.Get("soa_edit_api").(string)
 		zoneInfo.APIRectify = d.Get("api_rectify").(bool)
 		zoneInfo.DNSSec = d.Get("dnssec").(bool)
@@ -206,6 +230,7 @@ func resourcePDNSZoneUpdate(d *schema.ResourceData, meta interface{}) error {
 		resourcePDNSZoneRead(d, meta)
 		return c
 	}
+
 	return nil
 }
 

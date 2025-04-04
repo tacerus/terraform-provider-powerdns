@@ -105,6 +105,60 @@ func TestAccPDNSZoneMaster(t *testing.T) {
 	})
 }
 
+func TestAccPDNSZoneMasterSOAEDIT(t *testing.T) {
+	resourceName := "powerdns_zone.test-master-soa-edit"
+	resourceSOAEDITAPI := `INCEPTION-INCREMENT`
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPDNSZoneDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testPDNSZoneConfigMasterSOAEDIT,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPDNSZoneExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", "master-soa-edit.sysa.abc."),
+					resource.TestCheckResourceAttr(resourceName, "kind", "Master"),
+					resource.TestCheckResourceAttr(resourceName, "soa_edit", resourceSOAEDITAPI),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// FIXME: this tends to run before TestAccPDNSZoneMasterSOAEDIT() and then has nothing to delete, causing it to pass without really having tested anything
+func TestAccPDNSZoneMasterSOAEDITDelete(t *testing.T) {
+	resourceName := "powerdns_zone.test-master-soa-edit"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPDNSZoneDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testPDNSZoneConfigMasterSOAEDITUndefined,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPDNSZoneExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", "master-soa-edit.sysa.abc."),
+					resource.TestCheckResourceAttr(resourceName, "kind", "Master"),
+					resource.TestCheckResourceAttr(resourceName, "soa_edit", ""),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccPDNSZoneMasterSOAAPIEDIT(t *testing.T) {
 	resourceName := "powerdns_zone.test-master-soa-edit-api"
 	resourceSOAEDITAPI := `DEFAULT`
@@ -474,6 +528,21 @@ resource "powerdns_zone" "test-native" {
 const testPDNSZoneConfigMaster = `
 resource "powerdns_zone" "test-master" {
 	name = "master.sysa.abc."
+	kind = "Master"
+	nameservers = ["ns1.sysa.abc.", "ns2.sysa.abc."]
+}`
+
+const testPDNSZoneConfigMasterSOAEDIT = `
+resource "powerdns_zone" "test-master-soa-edit" {
+	name = "master-soa-edit.sysa.abc."
+	kind = "Master"
+	nameservers = ["ns1.sysa.abc.", "ns2.sysa.abc."]
+	soa_edit = "INCEPTION-INCREMENT"
+}`
+
+const testPDNSZoneConfigMasterSOAEDITUndefined = `
+resource "powerdns_zone" "test-master-soa-edit" {
+	name = "master-soa-edit.sysa.abc."
 	kind = "Master"
 	nameservers = ["ns1.sysa.abc.", "ns2.sysa.abc."]
 }`

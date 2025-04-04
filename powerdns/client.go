@@ -184,6 +184,7 @@ type ZoneInfo struct {
 	Account            string              `json:"account"`
 	Nameservers        []string            `json:"nameservers,omitempty"`
 	Masters            []string            `json:"masters,omitempty"`
+	SoaEdit            string              `json:"soa_edit"`
 	SoaEditAPI         string              `json:"soa_edit_api"`
 }
 
@@ -194,6 +195,7 @@ type ZoneInfoUpd struct {
 	APIRectify bool   `json:"api_rectify"`
 	DNSSec     bool   `json:"dnssec"`
 	NSEC3Param string `json:"nsec3param"`
+	SoaEdit    string `json:"soa_edit,omitempty"`
 	SoaEditAPI string `json:"soa_edit_api,omitempty"`
 	Account    string `json:"account"`
 }
@@ -424,6 +426,30 @@ func (client *Client) UpdateZone(name string, zoneInfo ZoneInfoUpd) error {
 			return fmt.Errorf("Error updating zone: %s", zoneInfo.Name)
 		}
 		return fmt.Errorf("Error updating zone: %s, reason: %q", zoneInfo.Name, errorResp.ErrorMsg)
+	}
+
+	return nil
+}
+
+// DeleteZoneMeta deletes a zone metadata entry
+func (client *Client) DeleteZoneMeta(name string, kind string) error {
+	req, err := client.newRequest("DELETE", fmt.Sprintf("/servers/localhost/zones/%s/metadata/%s", name, kind), nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 204 {
+		errorResp := new(errorResponse)
+		if err = json.NewDecoder(resp.Body).Decode(errorResp); err != nil {
+			return fmt.Errorf("Error deleting meta %s from zone %s", kind, name)
+		}
+		return fmt.Errorf("Error deleting meta %s from zone %s, reason: %q", kind, name, errorResp.ErrorMsg)
 	}
 
 	return nil
