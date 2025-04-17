@@ -40,7 +40,6 @@ func resourcePDNSZone() *schema.Resource {
 			"account": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "admin",
 				ForceNew:     false,
 				ValidateFunc: validation.StringLenBetween(0, 40),
 			},

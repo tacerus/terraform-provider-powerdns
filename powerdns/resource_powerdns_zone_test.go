@@ -294,7 +294,7 @@ func TestAccPDNSZoneAccountEmpty(t *testing.T) {
 
 func TestAccPDNSZoneAccountUndefined(t *testing.T) {
 	resourceName := "powerdns_zone.test-account-undefined"
-	resourceAccount := `admin`
+	resourceAccount := ``
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
