@@ -4,6 +4,12 @@ variable "zones" {
 	default     = []
 }
 
+variable "kind" {
+	description = "Kind to set in the given zones."
+	type        = string
+	default     = "Native"
+}
+
 variable "nameservers" {
 	description = "List of nameservers to configure in the given zones (automatically populated from NS records if not specified)."
 	type        = list

@@ -9,7 +9,7 @@ locals {
 resource "powerdns_zone" "zone" {
 	for_each = toset(local.zones)
 	name = each.value
-	kind = "Native"
+	kind = var.kind
 	nameservers = length(var.nameservers) == 0 ? local.nameservers_records_data : var.nameservers
 	soa_edit = var.soa_edit
 	soa_edit_api = var.soa_edit_api
